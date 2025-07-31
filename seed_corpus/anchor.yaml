@@ -1,0 +1,4 @@
+anchor: &a
+  foo: bar
+ref:
+  <<: *a

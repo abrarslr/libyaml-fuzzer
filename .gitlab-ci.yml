@@ -1,0 +1,22 @@
+stages:
+  - fuzz
+
+fuzz_libyaml:
+  image: llvm/clang:latest
+  stage: fuzz
+  before_script:
+    - apt-get update && apt-get install -y cmake make git
+  script:
+    - git clone https://github.com/yaml/libyaml.git
+    - cd libyaml && mkdir build && cd build
+    - cmake -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS="-fsanitize=address,undefined -O1 -g" ..
+    - make -j$(nproc)
+    - clang -fsanitize=address,undefined -O1 -g -Iinclude ../fuzz_yaml.c -Lbuild -lyaml -lFuzzer -o fuzz_yaml
+    - mkdir corpus && echo "key: value" > corpus/seed.yaml
+    - ./fuzz_yaml -max_total_time=60 corpus
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - crash-*
+      - corpus/
