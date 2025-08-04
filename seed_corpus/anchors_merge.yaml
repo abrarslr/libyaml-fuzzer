@@ -1,0 +1,7 @@
+base: &B
+  k1: v1
+  k2: v2
+child:
+  <<: *B
+  k2: override
+  ref: *B

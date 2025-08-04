@@ -1,0 +1,6 @@
+list_block:
+  - 1
+  - 2
+list_flow: [1, 2, 3]
+map_flow: {a: 1, b: 2}
+tagged: !!map { ? !!str "key" : !!seq [!!int 1, !!str two] }

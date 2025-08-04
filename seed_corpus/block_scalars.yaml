@@ -1,0 +1,7 @@
+plain: |
+  line1
+
+  line3 (blank line above)
+folded: >-
+  line1
+  line2 wraps

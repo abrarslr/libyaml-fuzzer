@@ -1,22 +1,33 @@
-stages:
-  - fuzz
+stages: [fuzz]
 
-fuzz_libyaml:
+.fuzz-base:
   image: llvm/clang:latest
   stage: fuzz
   before_script:
     - apt-get update && apt-get install -y cmake make git
-  script:
     - git clone https://github.com/yaml/libyaml.git
     - cd libyaml && mkdir build && cd build
-    - cmake -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS="-fsanitize=address,undefined -O1 -g" ..
-    - make -j$(nproc)
-    - clang -fsanitize=address,undefined -O1 -g -Iinclude ../fuzz_yaml.c -Lbuild -lyaml -lFuzzer -o fuzz_yaml
-    - mkdir corpus && echo "key: value" > corpus/seed.yaml
-    - ./fuzz_yaml -max_total_time=60 corpus
+    - cmake -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS="-fsanitize=fuzzer-no-link,address,undefined -O1 -g" ..
+    - make -j"$(nproc)"
+
+fuzz:events:
+  extends: .fuzz-base
+  script:
+    - clang -fsanitize=fuzzer,address,undefined -O1 -g -Iinclude ../fuzz_yaml_events.c -Lbuild -lyaml -o fuzz_yaml_events
+    - mkdir -p corpus_events artifacts/events
+    - ./fuzz_yaml_events -max_total_time=120 -dict=yaml.dict -reload=1 -timeout=5 -artifact_prefix=./artifacts/events/ corpus_events
   artifacts:
     when: always
     expire_in: 1 week
-    paths:
-      - crash-*
-      - corpus/
+    paths: ["artifacts/events/", "corpus_events/"]
+
+fuzz:docs:
+  extends: .fuzz-base
+  script:
+    - clang -fsanitize=fuzzer,address,undefined -O1 -g -Iinclude ../fuzz_yaml_docs.c -Lbuild -lyaml -o fuzz_yaml_docs
+    - mkdir -p corpus_docs artifacts/docs
+    - ./fuzz_yaml_docs -max_total_time=120 -dict=yaml.dict -reload=1 -timeout=5 -artifact_prefix=./artifacts/docs/ corpus_docs
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths: ["artifacts/docs/", "corpus_docs/"]
